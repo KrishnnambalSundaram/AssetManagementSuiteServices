@@ -1,0 +1,2497 @@
+{
+	"info": {
+		"_postman_id": "670f48b0-4cc8-4e93-811c-39b0b3660ebc",
+		"name": "Job Scheduler API - Complete",
+		"description": "Complete API collection for the Job Scheduler application with all CRUD operations for Users, Organizations, Job Templates, Jobs, Job Notifications, Job Executions, Informatica Job Runs, and AI Chat Assistant. Includes JWT authentication, organization management, comprehensive job monitoring, Informatica integration, and intelligent AI-powered data queries and insights.\n\n## 🔄 Update Operations & Filtering\n\nAll update endpoints support **partial updates** - you only need to include the fields you want to change. Here's a quick reference:\n\n### **Users** (`PUT /api/v1/users/{user_id}`)\n- `username`, `email`, `password`, `is_active`\n- Example: `{\"username\": \"new_name\"}` or `{\"is_active\": false}`\n\n### **Organizations** (`PUT /api/v1/organizations/{organization_id}`)\n- `name`, `description`, `domain`, `is_active`, `configuration`, `identifier`, `username`, `password`, `environment`\n- Example: `{\"name\": \"New Name\", \"is_active\": false}`\n\n### **Job Templates** (`PUT /api/v1/job-templates/{job_template_id}`)\n- `title`, `description`, `script_type`, `script_content`, `script_path`, `parameters_schema`, `is_active`, `organization_id`\n- Example: `{\"title\": \"New Title\", \"is_active\": true}`\n\n### **Jobs** (`PUT /api/v1/jobs/{job_id}`)\n- Job fields: `title`, `parameters`, `status`, `trigger_type`, `frequency_*`, `cron_expression`, `timeout_seconds`, `max_retries`, `trigger_on`\n- Email notifications: `emailIds` array\n- Example: `{\"job\": {\"status\": \"running\"}, \"emailIds\": [\"admin@example.com\"]}`\n\n### **Job Notifications** (`PUT /api/v1/job-notifications/{notification_id}`)\n- `job_id`, `notification_type`, `trigger_on`, `configuration`, `is_active`\n- Example: `{\"trigger_on\": \"failure\", \"is_active\": false}`\n\n### **User-Organization Mappings** (`PUT /api/v1/user-organizations/{mapping_id}`)\n- `role`, `is_active`\n- Example: `{\"role\": \"admin\"}` or `{\"is_active\": false}`\n\n### **Special Operations**\n- **Toggle Notification Status** (`PATCH /api/v1/job-notifications/{notification_id}/toggle`): Automatically switches between enabled/disabled states\n\n## 🎯 Best Practices\n1. **Partial Updates**: Only send the fields you want to change\n2. **Validation**: All fields are validated before processing\n3. **Atomic Operations**: Updates are processed atomically\n4. **Audit Trail**: All changes are logged with timestamps",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "16067931",
+		"_collection_link": "https://planetary-shadow-176388.postman.co/workspace/Zenduit~683d44ba-2ff7-4eb1-bd62-5934113c58af/collection/16067931-670f48b0-4cc8-4e93-811c-39b0b3660ebc?action=share&source=collection_link&creator=16067931"
+	},
+	"item": [
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								""
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all users with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"me"
+							]
+						},
+						"description": "Get current user's profile with organizations"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Get a specific user by ID with organizations"
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{test_user_username}}\",\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"{{test_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								""
+							]
+						},
+						"description": "Create a new user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{test_user_username}}_updated\",\n  \"email\": \"{{test_user_email}}_updated@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Update an existing user. All fields are optional - only include the fields you want to update.\n\n**Available fields to update:**\n- `username`: New username\n- `email`: New email address\n- `password`: New password\n- `is_active`: Boolean to enable/disable user\n\n**Example filters:**\n- Update only username: `{\"username\": \"new_name\"}`\n- Update only email: `{\"email\": \"new@email.com\"}`\n- Update multiple fields: `{\"username\": \"new_name\", \"email\": \"new@email.com\"}`\n- Enable/disable user: `{\"is_active\": false}"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Delete a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{test_user_email}}\",\n  \"password\": \"{{test_user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"login"
+							]
+						},
+						"description": "Authenticate user and return JWT token"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save JWT token from login response",
+									"var json = pm.response.json();",
+									"if (json.access_token) {",
+									"    pm.environment.set(\"jwt_token\", json.access_token);",
+									"    console.log(\"JWT token saved: \" + json.access_token);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get User Organizations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/organizations?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"organizations"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all organizations for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Map User to Organizations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"organization_ids\": [\"{{organization_id}}\"],\n  \"role\": \"admin\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/organizations/map",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"organizations",
+								"map"
+							]
+						},
+						"description": "Map a user to multiple organizations with role"
+					},
+					"response": []
+				}
+			],
+			"description": "User management endpoints"
+		},
+		{
+			"name": "Organizations",
+			"item": [
+				{
+					"name": "Get All Organizations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								""
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all organizations with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Organization by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{organization_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{organization_id}}"
+							]
+						},
+						"description": "Get a specific organization by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{test_organization_name}}\",\n  \"description\": \"{{test_organization_description}}\",\n  \"domain\": \"{{test_organization_domain}}\",\n  \"username\": \"{{test_organization_username}}\",\n  \"password\": \"{{test_organization_password}}\",\n  \"environment\": \"{{test_organization_environment}}\",\n  \"identifier\": \"{{test_organization_identifier}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								""
+							]
+						},
+						"description": "Create a new organization"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save organization ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"organization_id\", json.id);",
+									"    console.log(\"Organization ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Organization",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{test_organization_name}}_updated\",\n  \"description\": \"{{test_organization_description}}_updated\",\n  \"domain\": \"{{test_organization_domain}}_updated.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{organization_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{organization_id}}"
+							]
+						},
+						"description": "Update an existing organization. All fields are optional - only include the fields you want to update.\n\n**Available fields to update:**\n- `name`: Organization name\n- `description`: Organization description\n- `domain`: Organization domain\n- `is_active`: Boolean to enable/disable organization\n- `configuration`: Custom configuration object\n- `identifier`: Provider identifier\n- `username`: API username\n- `password`: API password\n- `environment`: Environment (dev/staging/prod)\n\n**Example filters:**\n- Update only name: `{\"name\": \"New Org Name\"}`\n- Update multiple fields: `{\"name\": \"New Name\", \"description\": \"New Description\"}`\n- Enable/disable: `{\"is_active\": false}`\n- Update credentials: `{\"username\": \"new_user\", \"password\": \"new_pass\"}`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Organization",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/{{organization_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"{{organization_id}}"
+							]
+						},
+						"description": "Delete an organization"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Organization by Identifier",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/check-identifier/{{test_organization_identifier}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"check-identifier",
+								"{{test_organization_identifier}}"
+							]
+						},
+						"description": "Check if an organization exists by provider identifier"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Organization by Identifier",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/organizations/by-identifier/{{test_organization_identifier}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"organizations",
+								"by-identifier",
+								"{{test_organization_identifier}}"
+							]
+						},
+						"description": "Get an organization by provider identifier"
+					},
+					"response": []
+				}
+			],
+			"description": "Organization management endpoints"
+		},
+		{
+			"name": "Job Templates",
+			"item": [
+				{
+					"name": "Get All Job Templates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								""
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all job templates with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Predefined Scripts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/predefined-scripts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								"predefined-scripts"
+							]
+						},
+						"description": "Get list of predefined scripts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Template by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/{{job_template_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								"{{job_template_id}}"
+							]
+						},
+						"description": "Get a specific job template by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job Template",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"{{test_template_title}}\",\n  \"description\": \"Template for processing large datasets\",\n  \"script_type\": \"predefined\",\n  \"script_content\": \"import pandas as pd\\n\\ndef process_data(data):\\n    return data.head()\",\n  \"parameters_schema\": {\n    \"input_file\": \"string\",\n    \"output_file\": \"string\"\n  },\n  \"is_active\": true,\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								""
+							]
+						},
+						"description": "Create a new job template"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save job template ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"job_template_id\", json.id);",
+									"    console.log(\"Job Template ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Job Template",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"{{test_template_title}}_updated\",\n  \"description\": \"Updated template for processing large datasets\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/{{job_template_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								"{{job_template_id}}"
+							]
+						},
+						"description": "Update an existing job template. All fields are optional - only include the fields you want to update.\n\n**Available fields to update:**\n- `title`: Template title\n- `description`: Template description\n- `script_type`: Script type (predefined/custom)\n- `script_content`: Script content\n- `script_path`: Script file path\n- `parameters_schema`: Parameters schema object\n- `is_active`: Boolean to enable/disable template\n- `organization_id`: Organization ID\n\n**Example filters:**\n- Update only title: `{\"title\": \"New Template Name\"}`\n- Update script: `{\"script_content\": \"new_script_code\"}`\n- Enable/disable: `{\"is_active\": false}`\n- Update multiple: `{\"title\": \"New Name\", \"description\": \"New Description\"}`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Job Template",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-templates/{{job_template_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-templates",
+								"{{job_template_id}}"
+							]
+						},
+						"description": "Delete a job template"
+					},
+					"response": []
+				}
+			],
+			"description": "Job template management endpoints"
+		},
+		{
+			"name": "Jobs",
+			"item": [
+				{
+					"name": "Get All Jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								""
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all jobs with pagination and last 5 executions"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/{{job_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								"{{job_id}}"
+							]
+						},
+						"description": "Get a specific job by ID with last 5 executions"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"job\": {\n    \"title\": \"{{test_job_title}}\",\n    \"template_id\": \"{{job_template_id}}\",\n    \"parameters\": {\n      \"input_file\": \"daily_data.csv\",\n      \"output_file\": \"processed_data.csv\"\n    },\n    \"status\": \"pending\",\n    \"trigger_type\": \"cron\",\n    \"cron_expression\": \"0 2 * * *\",\n    \"timeout_seconds\": 3600,\n    \"max_retries\": 3,\n    \"organization_id\": \"{{organization_id}}\",\n    \"trigger_on\": \"both\"\n  },\n  \"emailIds\": [\n    \"{{test_notification_email}}\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								""
+							]
+						},
+						"description": "Create a new job with notification emails"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save job ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"job_id\", json.id);",
+									"    console.log(\"Job ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Job",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"job\": {\n    \"title\": \"{{test_job_title}}_updated\",\n    \"status\": \"running\",\n    \"timeout_seconds\": 7200\n  },\n  \"emailIds\": [\n    \"admin@example.com\",\n    \"{{test_notification_email}}\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/{{job_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								"{{job_id}}"
+							]
+						},
+						"description": "Update an existing job and its notification emails. The job update and email notifications are handled together.\n\n**Job fields to update (all optional):**\n- `title`: Job title\n- `parameters`: Job parameters object\n- `status`: Job status (pending/running/completed/failed)\n- `trigger_type`: Trigger type (manual/frequency/cron)\n- `frequency_interval`: Frequency interval number\n- `frequency_unit`: Frequency unit (minutes/hours/days)\n- `frequency_count`: Frequency count\n- `frequency_end_time`: End time for frequency\n- `cron_expression`: Cron expression for scheduling\n- `timeout_seconds`: Job timeout in seconds\n- `max_retries`: Maximum retry attempts\n- `trigger_on`: Trigger condition (success/failure/both)\n\n**Email notifications:**\n- `emailIds`: Array of email addresses for notifications\n\n**Example filters:**\n- Update only title: `{\"job\": {\"title\": \"New Job Name\"}, \"emailIds\": []}`\n- Update status and timeout: `{\"job\": {\"status\": \"running\", \"timeout_seconds\": 7200}, \"emailIds\": [\"admin@example.com\"]}`\n- Update scheduling: `{\"job\": {\"cron_expression\": \"0 2 * * *\"}, \"emailIds\": [\"user@example.com\"]}`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Job",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/{{job_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								"{{job_id}}"
+							]
+						},
+						"description": "Delete a job"
+					},
+					"response": []
+				},
+				{
+					"name": "Run Job Manually",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/{{job_id}}/run",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								"{{job_id}}",
+								"run"
+							]
+						},
+						"description": "Manually trigger a job execution"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Scheduled Jobs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/scheduled/list",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								"scheduled",
+								"list"
+							]
+						},
+						"description": "Get all currently scheduled jobs"
+					},
+					"response": []
+				}
+			],
+			"description": "Job management endpoints"
+		},
+		{
+			"name": "Job Notifications",
+			"item": [
+				{
+					"name": "Get All Job Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								""
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all job notifications with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Notifications by Job ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/?job_id={{job_id}}&skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								""
+							],
+							"query": [
+								{
+									"key": "job_id",
+									"value": "{{job_id}}",
+									"description": "Filter by job ID"
+								},
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get job notifications filtered by job ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Notification by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/{{notification_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								"{{notification_id}}"
+							]
+						},
+						"description": "Get a specific job notification by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job Notification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"job_id\": \"{{job_id}}\",\n  \"notification_type\": \"email\",\n  \"trigger_on\": \"both\",\n  \"configuration\": {\n    \"emails\": [\"{{test_notification_email}}\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								""
+							]
+						},
+						"description": "Create a new job notification"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save notification ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"notification_id\", json.id);",
+									"    console.log(\"Notification ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Update Job Notification",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"notification_type\": \"email\",\n  \"trigger_on\": \"failure\",\n  \"configuration\": {\n    \"emails\": [\"admin@example.com\", \"{{test_notification_email}}\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/{{notification_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								"{{notification_id}}"
+							]
+						},
+						"description": "Update an existing job notification. All fields are optional - only include the fields you want to update.\n\n**Available fields to update:**\n- `job_id`: Job ID\n- `notification_type`: Notification type (email/slack/webhook)\n- `trigger_on`: Trigger condition (success/failure/both)\n- `configuration`: Configuration object (e.g., emails array, webhook URL)\n- `is_active`: Boolean to enable/disable notification\n\n**Example filters:**\n- Update only trigger condition: `{\"trigger_on\": \"failure\"}`\n- Update email list: `{\"configuration\": {\"emails\": [\"new@email.com\"]}}`\n- Update multiple fields: `{\"trigger_on\": \"both\", \"is_active\": false}`\n- Enable/disable: `{\"is_active\": false}`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Job Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/{{notification_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								"{{notification_id}}"
+							]
+						},
+						"description": "Delete a job notification"
+					},
+					"response": []
+				},
+				{
+					"name": "Toggle Notification Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-notifications/{{notification_id}}/toggle",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-notifications",
+								"{{notification_id}}",
+								"toggle"
+							]
+						},
+						"description": "Toggle the active status of a job notification. This endpoint switches the notification between enabled and disabled states.\n\n**What it does:**\n- If notification is currently active (`is_active: true`), it will be deactivated\n- If notification is currently inactive (`is_active: false`), it will be activated\n\n**Use cases:**\n- Temporarily disable notifications without deleting them\n- Re-enable previously disabled notifications\n- Quick on/off toggle for notification management\n\n**No body required** - the endpoint automatically toggles the current state"
+					},
+					"response": []
+				}
+			],
+			"description": "Job notification management endpoints"
+		},
+		{
+			"name": "Job Executions",
+			"item": [
+				{
+					"name": "Get All Job Executions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-executions/?limit=10&page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-executions",
+								""
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of executions to return"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						},
+						"description": "Get all job executions with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Executions by Job ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-executions/job/{{job_id}}?limit=10&page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-executions",
+								"job",
+								"{{job_id}}"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of executions to return"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						},
+						"description": "Get executions for a specific job with pagination and job details"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Job Execution by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-executions/{{execution_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-executions",
+								"{{execution_id}}"
+							]
+						},
+						"description": "Get a specific job execution by ID with job details"
+					},
+					"response": []
+				}
+			],
+			"description": "Job execution history and monitoring endpoints"
+		},
+		{
+			"name": "Informatica Job Runs",
+			"item": [
+				{
+					"name": "Get All Job Runs",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-runs/?limit=10&page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-runs",
+								""
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of job runs to return"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number"
+								}
+							]
+						},
+						"description": "Get all Informatica job runs with pagination"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job Run",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-runs/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-runs",
+								""
+							]
+						},
+						"description": "Create a new Informatica job run and execute it"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save job run ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"job_run_id\", json.id);",
+									"    console.log(\"Job Run ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get Job Run by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-runs/{{job_run_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-runs",
+								"{{job_run_id}}"
+							]
+						},
+						"description": "Get a specific Informatica job run by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Latest Job Run",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/job-runs/latest-sync",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"job-runs",
+								"latest-sync"
+							]
+						},
+						"description": "Get the latest Informatica job run"
+					},
+					"response": []
+				}
+			],
+			"description": "Informatica job runs management and monitoring endpoints"
+		},
+		{
+			"name": "User-Organization Mapping",
+			"item": [
+				{
+					"name": "Create User-Organization Mapping",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"organization_id\": \"{{organization_id}}\",\n  \"role\": \"admin\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								""
+							]
+						},
+						"description": "Create a new user-organization mapping"
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Save mapping ID from creation response",
+									"var json = pm.response.json();",
+									"if (json.id) {",
+									"    pm.environment.set(\"mapping_id\", json.id);",
+									"    console.log(\"Mapping ID saved: \" + json.id);",
+									"}"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Get User's Organizations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/user/{{user_id}}?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"user",
+								"{{user_id}}"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all organizations for a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Organization's Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/organization/{{organization_id}}?skip=0&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"organization",
+								"{{organization_id}}"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0",
+									"description": "Number of records to skip"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records to return"
+								}
+							]
+						},
+						"description": "Get all users for a specific organization"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User-Organization Mapping",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"member\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/{{mapping_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"{{mapping_id}}"
+							]
+						},
+						"description": "Update a user-organization mapping. All fields are optional - only include the fields you want to update.\n\n**Available fields to update:**\n- `role`: User role in organization (admin/member/viewer)\n- `is_active`: Boolean to enable/disable access\n\n**Example filters:**\n- Update only role: `{\"role\": \"admin\"}`\n- Update only status: `{\"is_active\": false}`\n- Update both: `{\"role\": \"member\", \"is_active\": true}`\n- Demote user: `{\"role\": \"viewer\"}`\n- Disable access: `{\"is_active\": false}`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User-Organization Mapping",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/{{mapping_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"{{mapping_id}}"
+							]
+						},
+						"description": "Delete a user-organization mapping"
+					},
+					"response": []
+				},
+				{
+					"name": "Map User to Multiple Organizations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"organization_ids\": [\"{{organization_id}}\"],\n  \"role\": \"admin\",\n  \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/user/{{user_id}}/map",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"user",
+								"{{user_id}}",
+								"map"
+							]
+						},
+						"description": "Map a user to multiple organizations"
+					},
+					"response": []
+				},
+				{
+					"name": "Check User-Organization Access",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/user-organizations/check-access/{{user_id}}/{{organization_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"user-organizations",
+								"check-access",
+								"{{user_id}}",
+								"{{organization_id}}"
+							]
+						},
+						"description": "Check if a user has access to an organization"
+					},
+					"response": []
+				}
+			],
+			"description": "User-organization mapping management endpoints"
+		},
+		{
+			"name": "AI Chat Assistant",
+			"item": [
+				{
+					"name": "Send Chat Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"users inactive for 30 days\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Send a message to the AI chat assistant. The AI can answer questions about:\n- Inactive users (e.g., 'users inactive for 30 days')\n- Long running jobs (e.g., 'jobs running for over 10 minutes')\n- Recent job executions (e.g., 'last 10 jobs', 'list 10 jobs')\n- Job statistics (e.g., 'job success rate')\n- Recently logged users (e.g., 'last 10 logged users')\n- Job type specific queries (e.g., 'get last 10 jobs of type MTT_TEST')\n- Failed jobs by type (e.g., 'failed MTT_TEST jobs')\n- Successful jobs by type (e.g., 'successful MTT_TEST jobs')\n- Long running jobs by type (e.g., 'MTT_TEST jobs over 15 minutes')"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat Capabilities",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/capabilities",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"capabilities"
+							]
+						},
+						"description": "Get information about what the AI chat assistant can help with"
+					},
+					"response": []
+				},
+				{
+					"name": "AI Chat Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"health"
+							]
+						},
+						"description": "Health check for AI chat service"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Inactive Users Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"Show me users inactive for 30 days\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for inactive users"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Long Running Jobs Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"jobs that ran for over 10 minutes\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for long running jobs"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Recent Jobs Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"last 5 job executions\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for recent job executions"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Job Statistics Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"job statistics and success rate\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for job statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Recent Users Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"last 10 logged users\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for recently logged users"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Job Type Specific Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"get last 10 jobs of type MTT_TEST\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for job type specific filtering"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Failed Jobs by Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"failed MTT_TEST jobs\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for failed jobs by type"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Long Running Jobs by Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"MTT_TEST jobs running for over 15 minutes\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for long running jobs by type"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Successful Jobs by Type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"successful MTT_TEST jobs\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for successful jobs by type"
+					},
+					"response": []
+				},
+				{
+					"name": "Example: Simple List Query",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"message\": \"list 10 jobs\",\n  \"conversation_history\": [],\n  \"organization_id\": \"{{organization_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ai-chat/message",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ai-chat",
+								"message"
+							]
+						},
+						"description": "Example query for simple list requests"
+					},
+					"response": []
+				}
+			],
+			"description": "AI Chat Assistant endpoints for intelligent data queries and insights"
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check the health status of the API"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:9000",
+			"type": "string"
+		},
+		{
+			"key": "api_version",
+			"value": "v1",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "123e4567-e89b-12d3-a456-426614174000",
+			"type": "string"
+		},
+		{
+			"key": "organization_id",
+			"value": "123e4567-e89b-12d3-a456-426614174004",
+			"type": "string"
+		},
+		{
+			"key": "job_template_id",
+			"value": "123e4567-e89b-12d3-a456-426614174001",
+			"type": "string"
+		},
+		{
+			"key": "job_id",
+			"value": "123e4567-e89b-12d3-a456-426614174002",
+			"type": "string"
+		},
+		{
+			"key": "notification_id",
+			"value": "123e4567-e89b-12d3-a456-426614174003",
+			"type": "string"
+		},
+		{
+			"key": "execution_id",
+			"value": "123e4567-e89b-12d3-a456-426614174005",
+			"type": "string"
+		},
+		{
+			"key": "job_run_id",
+			"value": "123e4567-e89b-12d3-a456-426614174006",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "test_user_username",
+			"value": "test_user",
+			"type": "string"
+		},
+		{
+			"key": "test_user_email",
+			"value": "test@example.com",
+			"type": "string"
+		},
+		{
+			"key": "test_user_password",
+			"value": "test_password123",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_name",
+			"value": "Test Organization",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_description",
+			"value": "A test organization for development",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_domain",
+			"value": "test-org.com",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_username",
+			"value": "admin@test-org.com",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_password",
+			"value": "test_password123",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_environment",
+			"value": "development",
+			"type": "string"
+		},
+		{
+			"key": "test_organization_identifier",
+			"value": "test-org-dev",
+			"type": "string"
+		},
+		{
+			"key": "test_job_title",
+			"value": "Test Data Processing Job",
+			"type": "string"
+		},
+		{
+			"key": "test_template_title",
+			"value": "Test Data Processing Template",
+			"type": "string"
+		},
+		{
+			"key": "test_notification_email",
+			"value": "admin@example.com",
+			"type": "string"
+		},
+		{
+			"key": "mapping_id",
+			"value": "123e4567-e89b-12d3-a456-426614174007",
+			"type": "string"
+		}
+	]
+}

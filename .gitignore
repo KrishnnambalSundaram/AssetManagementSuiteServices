@@ -40,3 +40,6 @@ Thumbs.db
 # Agent documentation
 AGENTS.md
 SETUP_GUIDE.md
+
+.vscode/
+.idea/

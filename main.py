@@ -22,6 +22,8 @@ from src.modules.user_organization.routes import router as user_organization_rou
 from src.modules.informatica_job_logs.routes import router as informatica_job_logs_router
 from src.modules.ai_chatbot.routes import router as ai_chatbot_router
 from src.modules.webhook.routes import router as webhook_router
+from src.modules.job_monitoring.routes import router as job_monitoring_router
+from src.modules.job_skip.routes import router as job_skip_router
 
 # Local imports
 from src.utils.config import settings
@@ -122,6 +124,8 @@ app.include_router(job_execution_router, prefix="/api/v1")
 app.include_router(informatica_job_logs_router, prefix="/api/v1")
 app.include_router(ai_chatbot_router, prefix="/api/v1")
 app.include_router(webhook_router, prefix="/api/v1")
+app.include_router(job_monitoring_router, prefix="/api/v1")
+app.include_router(job_skip_router, prefix="/api/v1")
 
 
 @app.get("/health")

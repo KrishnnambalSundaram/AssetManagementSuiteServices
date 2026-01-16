@@ -65,9 +65,9 @@ def get_email_recipients(job_id: str) -> List[str]:
 
 
 def send_email_with_attachment(
-    job_id: str, subject: str, body: str, attachment_path: str
+    job_id: str, subject: str, body: str, attachment_path: str = "", custom_recipients: list[str] = None
 ) -> None:
-    recipients: List[str] = get_email_recipients(job_id)
+    recipients: List[str] = custom_recipients if custom_recipients else get_email_recipients(job_id)
     if not recipients:
         logger.info(f"[Email] No recipients found for {subject}")
         return
@@ -75,5 +75,5 @@ def send_email_with_attachment(
     attachments = []
     if attachment_path:
         attachments.append(attachment_path)
-    yag.send( to=recipients, subject=subject, contents=body, attachments=attachments )
+    yag.send(to=recipients, subject=subject, contents=body, attachments=attachments)
     logger.info(f"[Email] Email sent to {recipients} with subject {subject}")

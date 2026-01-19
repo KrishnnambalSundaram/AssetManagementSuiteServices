@@ -44,7 +44,8 @@ class JobMonitoringService:
             job_id=str(job.id),
             subject=email_subject,
             body=email_body,
-            attachment_path=None
+            attachment_path="",
+            custom_recipients=request.email_recipients
         )
         
         return JobMonitoringResponse(
@@ -106,7 +107,16 @@ class JobMonitoringService:
         return JobMonitoringDetailResponse(**job_dict)
 
     def _build_execution_detail(self, execution: JobExecution) -> ExecutionDetailResponse:
-        return ExecutionDetailResponse.model_validate(execution)
+        return ExecutionDetailResponse(
+            id=execution.id,
+            job_id=execution.job_id,
+            status=execution.status,
+            started_at=execution.started_at,
+            completed_at=execution.completed_at,
+            result=execution.result,
+            error_message=execution.error_message,
+            retry_count=execution.retry_count
+        )
 
     def _build_email_body(self, job_detail: JobMonitoringDetailResponse, executions: list[ExecutionDetailResponse]) -> str:
         body = f"""

@@ -6,17 +6,34 @@ from sqlalchemy.orm import Session
 
 from src.modules.job_skip.schema import (JobSkipCheckRequest,
                                        JobSkipCheckResponse,
-                                       JobSkipDetailResponse)
+                                       JobSkipDetailResponse,
+                                       InformaticaScheduleResponse)
 from src.modules.job_skip.service import JobSkipService
 from src.utils.auth import get_current_user
 from src.utils.database import db
 from src.models.job import Job
+from src.models.organization import Organization
 
 router = APIRouter(
     prefix="/job-skip",
     tags=["job-skip"],
     dependencies=[Depends(get_current_user)]
 )
+
+
+@router.get("/informatica-schedules/{organization_id}", response_model=InformaticaScheduleResponse)
+async def get_informatica_schedules(
+    organization_id: str,
+    db_session: Session = Depends(db)
+):
+    """Fetch all enabled schedules from Informatica API for an organization"""
+    try:
+        service = JobSkipService(db_session)
+        return service.get_informatica_schedules(organization_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/check", response_model=JobSkipCheckResponse)
@@ -52,7 +69,15 @@ async def get_missed_jobs(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid organization ID format: {organization_id}")
         
-        missed_jobs = service._identify_skipped_jobs(org_uuid, time_window_hours)
+        org = service.db.query(Organization).filter(Organization.id == org_uuid).first()
+        
+        informatica_schedules = service._fetch_informatica_schedules(org)
+        
+        missed_jobs = service._identify_skipped_jobs(
+            org_uuid, 
+            informatica_schedules=informatica_schedules,
+            time_window_hours=time_window_hours
+        )
         
         return JobSkipDetailResponse(
             missed_jobs=missed_jobs,

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import uuid
 
@@ -13,8 +13,11 @@ from src.models.organization import Organization
 from src.modules.job_skip.schema import (JobSkipCheckRequest,
                                        JobSkipCheckResponse,
                                        JobSkipDetailResponse,
-                                       MissedJobDetail)
+                                       MissedJobDetail,
+                                       InformaticaScheduleResponse,
+                                       InformaticaSchedule)
 from src.utils.notify import send_email_with_attachment
+from src.utils.informatica import InformaticaUtils
 
 logger = logging.getLogger(__name__)
 
@@ -23,23 +26,62 @@ class JobSkipService:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_informatica_schedules(self, organization_id: str) -> InformaticaScheduleResponse:
+        """Fetch all enabled schedules from Informatica API for an organization"""
+        org = self.db.query(Organization).filter(Organization.id == uuid.UUID(organization_id)).first()
+        if not org:
+            raise ValueError(f"Organization with ID {organization_id} not found")
+
+        informatica_service = InformaticaUtils()
+        informatica_service.set_credentials(
+            username=org.username,
+            password=org.password,
+            domain_url=org.domain,
+        )
+
+        if not informatica_service.login(org.username, org.password, org.domain):
+            raise Exception("Failed to login to Informatica")
+
+        schedules = informatica_service.get_schedules(query_params={"status": "enabled"})
+        if not schedules:
+            return InformaticaScheduleResponse(
+                message="No schedules found for organization",
+                organization_id=organization_id,
+                schedules_count=0,
+                schedules=[],
+                fetched_at=datetime.now()
+            )
+
+        logger.info(f"fetched {len(schedules)} schedules from Informatica")
+        schedule_objects = [InformaticaSchedule(**schedule) for schedule in schedules]
+
+        return InformaticaScheduleResponse(
+            message=f"fetched {len(schedule_objects)} schedules from Informatica",
+            organization_id=organization_id,
+            schedules_count=len(schedule_objects),
+            schedules=schedule_objects,
+            fetched_at=datetime.now()
+        )
+
     def check_job_skips(self, request: JobSkipCheckRequest) -> JobSkipCheckResponse:
         logger.info(f"Checking job skips for organization {request.organization_id}")
-        
+
         org = self.db.query(Organization).filter(Organization.id == uuid.UUID(request.organization_id)).first()
         if not org:
             raise ValueError(f"Organization with ID {request.organization_id} not found")
-        
-        try:
-            org_uuid = uuid.UUID(request.organization_id)
-        except ValueError:
-            raise ValueError(f"Invalid organization ID format: {request.organization_id}")
-        
-        skipped_jobs = self._identify_skipped_jobs(org_uuid, request.time_window_hours)
-        
+
+        informatica_schedules = self._fetch_informatica_schedules(org)
+        skipped_jobs = self._identify_skipped_jobs(
+            org_uuid=uuid.UUID(request.organization_id),
+            informatica_schedules=informatica_schedules,
+            time_window_hours=request.time_window_hours,
+            use_custom_mapping=request.use_custom_mapping,
+            custom_mapping_field=request.custom_mapping_field
+        )
+
         if skipped_jobs:
             self._send_skip_notification(org, skipped_jobs, request.email_recipients)
-        
+
         return JobSkipCheckResponse(
             message=f"Job skip check completed. Found {len(skipped_jobs)} skipped jobs.",
             organization_id=request.organization_id,
@@ -47,32 +89,57 @@ class JobSkipService:
             checked_at=datetime.now()
         )
 
-    def _identify_skipped_jobs(self, organization_id: uuid.UUID, time_window_hours: int) -> list[MissedJobDetail]:
+    def _fetch_informatica_schedules(self, organization: Organization) -> list:
+        """Fetch enabled schedules from Informatica API"""
+        informatica_service = InformaticaUtils()
+        informatica_service.set_credentials(
+            username=organization.username,
+            password=organization.password,
+            domain_url=organization.domain,
+        )
+
+        if not informatica_service.login(organization.username, organization.password, organization.domain):
+            raise Exception("Failed to login to Informatica")
+
+        schedules = informatica_service.get_schedules(query_params={"status": "enabled"})
+        if not schedules:
+            return []
+
+        logger.info(f"fetched {len(schedules)} schedules from Informatica")
+        return schedules
+
+    def _identify_skipped_jobs(self, organization_id: uuid.UUID, informatica_schedules, time_window_hours: int, use_custom_mapping: bool, custom_mapping_field: str) -> list:
         missed_jobs = []
-        
-        time_threshold = datetime.now() - timedelta(hours=time_window_hours)
-        
-        jobs = (
+
+        time_threshold = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
+
+        local_jobs = (
             self.db.query(Job)
             .filter(Job.organization_id == organization_id)
             .filter(Job.status == "running")
-            .filter(Job.trigger_type.in_(["frequency", "cron"]))
             .all()
         )
-        
-        logger.info(f"Found {len(jobs)} active scheduled jobs to check")
-        
-        for job in jobs:
+
+        logger.info(f"found {len(local_jobs)} local jobs and {len(informatica_schedules)} informatica schedules")
+
+        schedule_job_map = self._map_schedules_to_jobs(informatica_schedules, local_jobs, use_custom_mapping, custom_mapping_field)
+
+        schedules_to_check = informatica_schedules if informatica_schedules else []
+
+        for schedule in schedules_to_check:
+            job = schedule_job_map.get(schedule.get("name"))
+            if not job:
+                continue
+
             last_execution = (
                 self.db.query(JobExecution)
-                .join(Job)
-                .filter(Job.id == job.id)
+                .filter(JobExecution.job_id == job.id)
                 .order_by(JobExecution.started_at.desc())
                 .first()
             )
-            
-            expected_run, skip_reason = self._check_expected_run(job, last_execution, time_threshold)
-            
+
+            expected_run, skip_reason = self._check_expected_run_against_schedule(schedule, last_execution, time_threshold)
+
             if expected_run and skip_reason:
                 missed_jobs.append(MissedJobDetail(
                     job_name=job.title,
@@ -81,65 +148,105 @@ class JobSkipService:
                     expected_run_time=expected_run,
                     skip_reason=skip_reason
                 ))
-        
+
         return missed_jobs
 
-    def _check_expected_run(self, job: Job, last_execution: Optional[JobExecution], time_threshold: datetime) -> tuple[Optional[datetime], Optional[str]]:
-        now = datetime.now()
-        
-        if not last_execution:
-            if job.created_at < time_threshold:
-                return now, "Job has never run since creation"
+    def _map_schedules_to_jobs(self, schedules, jobs, use_custom_mapping: bool, custom_mapping_field: str) -> dict:
+        schedule_job_map = {}
+
+        for schedule in schedules:
+            schedule_name = schedule.get("name")
+            schedule_id = schedule.get("id")
+            schedule_federated_id = schedule.get("scheduleFederatedId")
+
+            matching_job = None
+
+            if use_custom_mapping and custom_mapping_field:
+                for job in jobs:
+                    job_config = job.parameters or {}
+                    job_description = job.description or ""
+
+                    if job_config.get(custom_mapping_field) in [schedule_name, schedule_id, schedule_federated_id] or job_description in [schedule_name, schedule_id, schedule_federated_id]:
+                        matching_job = job
+                        break
+            else:
+                for job in jobs:
+                    if job.title == schedule_name:
+                        matching_job = job
+                        break
+
+            if matching_job:
+                schedule_job_map[schedule_name] = matching_job
+                logger.debug(f"mapped schedule '{schedule_name}' to job '{matching_job.title}'")
+
+        return schedule_job_map
+
+    def _check_expected_run_against_schedule(self, schedule, last_execution, time_threshold) -> tuple:
+        now = datetime.now(timezone.utc)
+
+        schedule_status = schedule.get("status")
+
+        if schedule_status != "enabled":
             return None, None
-        
+
+        if not last_execution:
+            create_time = self._parse_informatica_datetime(schedule.get("createTime"))
+            if create_time and create_time < time_threshold:
+                return now, "Schedule has never been executed since creation"
+            return None, None
+
         last_run = last_execution.started_at
-        time_since_last_run = now - last_run
-        
-        if job.trigger_type == "frequency":
-            if not job.frequency_interval or not job.frequency_unit:
-                return None, None
-            
-            interval_seconds = self._get_interval_seconds(job.frequency_interval, job.frequency_unit)
-            expected_next_run = last_run + timedelta(seconds=interval_seconds)
-            
+
+        schedule_interval = schedule.get("interval")
+
+        if schedule_interval == "Minutely":
+            frequency = schedule.get("frequency", 5)
+            expected_next_run = last_run + timedelta(minutes=frequency)
+            if expected_next_run < now:
+                return expected_next_run, f"missed minutely schedule (every {frequency} minutes)"
+
+        elif schedule_interval == "Hourly":
+            frequency = schedule.get("frequency", 1)
+            expected_next_run = last_run + timedelta(hours=frequency)
+            if expected_next_run < now:
+                return expected_next_run, f"missed hourly schedule (every {frequency} hours)"
+
+        elif schedule_interval == "Daily":
+            expected_next_run = last_run + timedelta(days=1)
             if expected_next_run < now and last_run < time_threshold:
-                return expected_next_run, f"Missed scheduled run (every {job.frequency_interval} {job.frequency_unit})"
-        
-        elif job.trigger_type == "cron":
-            if not job.cron_expression:
-                return None, None
-            
-            expected_next_run = self._get_next_cron_run(job.cron_expression, last_run)
-            
-            if expected_next_run and expected_next_run < now and last_run < time_threshold:
-                return expected_next_run, f"Missed cron scheduled run ({job.cron_expression})"
-        
+                return expected_next_run, "missed daily schedule"
+
+        elif schedule_interval == "Weekly":
+            expected_next_run = last_run + timedelta(weeks=1)
+            if expected_next_run < now and last_run < time_threshold:
+                return expected_next_run, "missed weekly schedule"
+
+        elif schedule_interval == "Biweekly":
+            expected_next_run = last_run + timedelta(weeks=2)
+            if expected_next_run < now and last_run < time_threshold:
+                return expected_next_run, "missed biweekly schedule"
+
+        elif schedule_interval == "Monthly":
+            expected_next_run = last_run + timedelta(days=30)
+            if expected_next_run < now and last_run < time_threshold:
+                return expected_next_run, "missed monthly schedule"
+
         return None, None
 
-    def _get_interval_seconds(self, interval: int, unit: str) -> int:
-        unit_multipliers = {
-            "seconds": 1,
-            "minutes": 60,
-            "hours": 3600,
-            "days": 86400,
-            "weeks": 604800,
-        }
-        return interval * unit_multipliers.get(unit, 1)
-
-    def _get_next_cron_run(self, cron_expression: str, last_run: datetime) -> Optional[datetime]:
+    def _parse_informatica_datetime(self, dt_str) -> Optional[datetime]:
+        if not dt_str:
+            return None
         try:
-            from croniter import croniter
-            cron = croniter(cron_expression, last_run)
-            return cron.get_next(datetime)
+            return datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
         except Exception as e:
-            logger.warning(f"Error parsing cron expression '{cron_expression}': {e}")
+            logger.warning(f"failed to parse datetime '{dt_str}': {e}")
             return None
 
-    def _send_skip_notification(self, organization: Organization, missed_jobs: list[MissedJobDetail], email_recipients: list[str]) -> None:
+    def _send_skip_notification(self, organization, missed_jobs, email_recipients) -> None:
         subject = f"Job Skip Alert: {organization.name} - {len(missed_jobs)} Missed Jobs"
         body = self._build_skip_email_body(organization, missed_jobs)
-        
-        logger.info(f"Sending skip notification for {len(missed_jobs)} jobs to {email_recipients}")
+
+        logger.info(f"sending skip notification for {len(missed_jobs)} jobs to {email_recipients}")
         send_email_with_attachment(
             job_id="skip-alert",
             subject=subject,
@@ -148,10 +255,10 @@ class JobSkipService:
             custom_recipients=email_recipients
         )
 
-    def _build_skip_email_body(self, organization: Organization, missed_jobs: list[MissedJobDetail]) -> str:
+    def _build_skip_email_body(self, organization, missed_jobs) -> str:
         body = f"""
 <h2>Job Skip Alert - {organization.name}</h2>
-<p>The following scheduled jobs have missed their expected execution time:</p>
+<p>The following Informatica schedules have missed their expected execution time:</p>
 <table border="1" cellpadding="5" style="border-collapse: collapse;">
 <tr>
     <th>Job Name</th>
@@ -163,7 +270,6 @@ class JobSkipService:
         for job in missed_jobs:
             last_run = job.last_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.last_run_time else 'Never'
             expected = job.expected_run_time.strftime('%Y-%m-%d %H:%M:%S') if job.expected_run_time else 'N/A'
-            
             body += f"""
 <tr>
     <td>{job.job_name}</td>
@@ -172,7 +278,6 @@ class JobSkipService:
     <td>{job.skip_reason}</td>
 </tr>
 """
-        
         body += f"""
 </table>
 <p><strong>Total Missed Jobs:</strong> {len(missed_jobs)}</p>
@@ -180,5 +285,3 @@ class JobSkipService:
 <p><em>Report generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</em></p>
 """
         return body
-
-from src.models.job_execution import JobExecution

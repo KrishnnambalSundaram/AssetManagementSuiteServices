@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.openapi.utils import get_openapi
 
 # Routes
 from src.modules.job.routes import router as job_router
@@ -60,37 +59,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Job Scheduler API",
     description="A flexible job scheduling and execution service",
-    version="1.0.0",
     lifespan=lifespan,
 )
-
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    
-    openapi_schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
-    )
-    
-    openapi_schema["components"]["securitySchemes"] = {
-        "Bearer": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-        }
-    }
-    
-    openapi_schema["security"] = [{"Bearer": []}]
-    
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi
 
 
 # CORS middleware

@@ -23,6 +23,7 @@ from src.modules.ai_chatbot.routes import router as ai_chatbot_router
 from src.modules.webhook.routes import router as webhook_router
 from src.modules.job_monitoring.routes import router as job_monitoring_router
 from src.modules.job_skip.routes import router as job_skip_router
+from src.modules.job_failure.routes import router as job_failure_router
 
 # Local imports
 from src.utils.config import settings
@@ -93,7 +94,10 @@ app.include_router(job_notification_router, prefix="/api/v1")
 app.include_router(job_execution_router, prefix="/api/v1")
 app.include_router(informatica_job_logs_router, prefix="/api/v1")
 app.include_router(ai_chatbot_router, prefix="/api/v1")
-app.include_router(webhook_router, prefix="/api/v1")
+app.include_router(
+    job_failure_router, prefix="/api/v1/job-failure", tags=["Job Failure Agent"]
+)
+app.include_router(webhook_router, prefix="/api/v1/webhook", tags=["Webhook"])
 app.include_router(job_monitoring_router, prefix="/api/v1")
 app.include_router(job_skip_router, prefix="/api/v1")
 

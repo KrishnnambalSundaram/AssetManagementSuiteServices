@@ -5,12 +5,23 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+from enum import Enum
+
+class TimePeriod(str, Enum):
+    HOURLY = "hourly"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
+
 class JobSkipCheckRequest(BaseModel):
     organization_id: str
     email_recipients: list[str]
-    time_window_hours: int = 24
+    time_period: Optional[TimePeriod] = TimePeriod.DAILY
+    time_window_hours: Optional[int] = None
     use_custom_mapping: bool = False
     custom_mapping_field: Optional[str] = None
+
 
 
 class JobSkipCheckResponse(BaseModel):

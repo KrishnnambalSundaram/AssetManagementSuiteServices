@@ -26,11 +26,29 @@ class JobSkipService:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_organization(self, org_id_or_identifier: str) -> Organization:
+        """Get organization by UUID ID or String Identifier"""
+        # Try as UUID
+        try:
+            org_uuid = uuid.UUID(org_id_or_identifier)
+            org = self.db.query(Organization).filter(Organization.id == org_uuid).first()
+            if org:
+                return org
+        except ValueError:
+            pass
+        
+        # Try as Identifier
+        org = self.db.query(Organization).filter(Organization.identifier == org_id_or_identifier).first()
+        if org:
+            return org
+            
+        raise ValueError(f"Organization with ID or Identifier '{org_id_or_identifier}' not found")
+
+
     def get_informatica_schedules(self, organization_id: str) -> InformaticaScheduleResponse:
         """Fetch all enabled schedules from Informatica API for an organization"""
-        org = self.db.query(Organization).filter(Organization.id == uuid.UUID(organization_id)).first()
-        if not org:
-            raise ValueError(f"Organization with ID {organization_id} not found")
+        org = self.get_organization(organization_id)
+
 
         informatica_service = InformaticaUtils()
         informatica_service.set_credentials(
@@ -42,7 +60,7 @@ class JobSkipService:
         if not informatica_service.login(org.username, org.password, org.domain):
             raise Exception("Failed to login to Informatica")
 
-        schedules = informatica_service.get_schedules(query_params={"status": "enabled"})
+        schedules = informatica_service.get_schedules(query_params={"q": "status=='enabled'"})
         if not schedules:
             return InformaticaScheduleResponse(
                 message="No schedules found for organization",
@@ -66,15 +84,28 @@ class JobSkipService:
     def check_job_skips(self, request: JobSkipCheckRequest) -> JobSkipCheckResponse:
         logger.info(f"Checking job skips for organization {request.organization_id}")
 
-        org = self.db.query(Organization).filter(Organization.id == uuid.UUID(request.organization_id)).first()
-        if not org:
-            raise ValueError(f"Organization with ID {request.organization_id} not found")
+        org = self.get_organization(request.organization_id)
 
         informatica_schedules = self._fetch_informatica_schedules(org)
+        # Determine time window
+        hours = request.time_window_hours
+        if hours is None and request.time_period:
+            if request.time_period == "hourly":
+                hours = 1
+            elif request.time_period == "daily":
+                hours = 24
+            elif request.time_period == "weekly":
+                hours = 168
+            elif request.time_period == "monthly":
+                hours = 720
+        
+        if hours is None:
+            hours = 24  # Default fallback
+
         skipped_jobs = self._identify_skipped_jobs(
-            org_uuid=uuid.UUID(request.organization_id),
+            organization_id=org.id,
             informatica_schedules=informatica_schedules,
-            time_window_hours=request.time_window_hours,
+            time_window_hours=hours,
             use_custom_mapping=request.use_custom_mapping,
             custom_mapping_field=request.custom_mapping_field
         )
@@ -101,14 +132,14 @@ class JobSkipService:
         if not informatica_service.login(organization.username, organization.password, organization.domain):
             raise Exception("Failed to login to Informatica")
 
-        schedules = informatica_service.get_schedules(query_params={"status": "enabled"})
+        schedules = informatica_service.get_schedules(query_params={"q": "status=='enabled'"})
         if not schedules:
             return []
 
         logger.info(f"fetched {len(schedules)} schedules from Informatica")
         return schedules
 
-    def _identify_skipped_jobs(self, organization_id: uuid.UUID, informatica_schedules, time_window_hours: int, use_custom_mapping: bool, custom_mapping_field: str) -> list:
+    def _identify_skipped_jobs(self, organization_id: uuid.UUID, informatica_schedules, time_window_hours: int, use_custom_mapping: bool = False, custom_mapping_field: str = None) -> list:
         missed_jobs = []
 
         time_threshold = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)

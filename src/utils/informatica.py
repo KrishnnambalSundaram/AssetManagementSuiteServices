@@ -203,6 +203,50 @@ class InformaticaUtils:
             logger.error(f"Error fetching connections: {e}")
             return None
 
+    def get_schedules(self, query_params: Optional[Dict[str, Any]] = None) -> Optional[List[Dict[str, Any]]]:
+        """
+        Fetch schedules from Informatica
+        """
+        if not self.session_id or not self.base_url:
+            logger.error("Not logged in. Please login first.")
+            return None
+
+        schedules_url = f"{self.base_url}/public/core/v3/schedule"
+        headers = {
+            "INFA-SESSION-ID": self.session_id,
+            "Accept": "application/json"
+        }
+
+
+        try:
+            print("Fetching schedules...")
+            response = requests.get(schedules_url, headers=headers, params=query_params)
+            response.raise_for_status()
+
+            schedules_data = response.json()
+            
+            # Handle case where API returns a dict wrapper instead of list
+            if isinstance(schedules_data, dict):
+                print(f"DEBUG: Response keys: {list(schedules_data.keys())}")
+                if "schedules" in schedules_data:
+                    schedules_data = schedules_data["schedules"]
+                elif "value" in schedules_data:
+                    schedules_data = schedules_data["value"]
+                elif "objects" in schedules_data:
+                    schedules_data = schedules_data["objects"]
+                elif "items" in schedules_data:
+                    schedules_data = schedules_data["items"]
+            
+            print(f"Retrieved {len(schedules_data)} schedules")
+            return schedules_data
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to fetch schedules: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching schedules: {e}")
+            return None
+
     def lookup_connections(self, connection_names: List[str]) -> Optional[List[Dict[str, Any]]]:
         """
         Lookup connection details using the lookup API

@@ -54,7 +54,8 @@ async def check_job_skips(
 @router.get("/organization/{organization_id}/missed", response_model=JobSkipDetailResponse)
 async def get_missed_jobs(
     organization_id: str,
-    time_window_hours: int = Query(24, ge=1, le=168, description="Time window in hours to check for missed jobs"),
+    time_period: Optional[str] = Query(None, description="Time period to check: hourly, daily, weekly, monthly"),
+    time_window_hours: Optional[int] = Query(None, ge=1, le=720, description="Custom time window in hours"),
     db_session: Session = Depends(db)
 ):
     """Get missed jobs for an organization without sending notification"""
@@ -64,24 +65,34 @@ async def get_missed_jobs(
         
         service = JobSkipService(db_session)
         
-        try:
-            org_uuid = uuid.UUID(organization_id)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid organization ID format: {organization_id}")
-        
-        org = service.db.query(Organization).filter(Organization.id == org_uuid).first()
+        org = service.get_organization(organization_id)
         
         informatica_schedules = service._fetch_informatica_schedules(org)
         
+        # Determine time window
+        hours = time_window_hours
+        if hours is None and time_period:
+            if time_period.lower() == "hourly":
+                hours = 1
+            elif time_period.lower() == "daily":
+                hours = 24
+            elif time_period.lower() == "weekly":
+                hours = 168
+            elif time_period.lower() == "monthly":
+                hours = 720
+        
+        if hours is None:
+            hours = 24  # Default fallback
+
         missed_jobs = service._identify_skipped_jobs(
-            org_uuid, 
+            org.id, 
             informatica_schedules=informatica_schedules,
-            time_window_hours=time_window_hours
+            time_window_hours=hours
         )
         
         return JobSkipDetailResponse(
             missed_jobs=missed_jobs,
-            total_jobs_checked=len(db_session.query(Job).filter(Job.organization_id == org_uuid).all()),
+            total_jobs_checked=len(db_session.query(Job).filter(Job.organization_id == org.id).all()),
             report_generated_at=datetime.now()
         )
     except HTTPException:
